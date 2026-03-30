@@ -1,0 +1,81 @@
+{
+  "best_model": "Random Forest",
+  "dataset_size": 16966,
+  "train_size": 11882,
+  "val_size": 2539,
+  "test_size": 2545,
+  "class_distribution": {
+    "StrongPalsy": 1104,
+    "SlightPalsy": 14530,
+    "Normal": 1332
+  },
+  "test_accuracy": 0.9418,
+  "cross_val_f1_mean": 0.5538,
+  "cross_val_f1_std": 0.1285,
+  "metrics_per_class": {
+    "Normal": {
+      "precision": 0.9586,
+      "recall": 0.81,
+      "f1": 0.878,
+      "support": 200
+    },
+    "SlightPalsy": {
+      "precision": 0.9436,
+      "recall": 0.9913,
+      "f1": 0.9669,
+      "support": 2179
+    },
+    "StrongPalsy": {
+      "precision": 0.8621,
+      "recall": 0.4518,
+      "f1": 0.5929,
+      "support": 166
+    }
+  },
+  "val_comparison": {
+    "Random Forest": {
+      "accuracy": 0.9346,
+      "precision": 0.9022,
+      "recall": 0.7383,
+      "f1": 0.8031
+    },
+    "SVM (RBF)": {
+      "accuracy": 0.898,
+      "precision": 0.7208,
+      "recall": 0.904,
+      "f1": 0.7886
+    }
+  },
+  "top_features": [
+    {
+      "feature": "eye_aperture_asymmetry",
+      "importance": 0.1295
+    },
+    {
+      "feature": "eye_aperture_ratio",
+      "importance": 0.1123
+    },
+    {
+      "feature": "mouth_angle",
+      "importance": 0.0807
+    },
+    {
+      "feature": "mouth_corner_height_diff",
+      "importance": 0.0776
+    },
+    {
+      "feature": "mouth_width",
+      "importance": 0.0733
+    }
+  ],
+  "error_analysis": {
+    "total_errors": 148,
+    "error_rate": 0.0582,
+    "error_types": {
+      "SlightPalsy->StrongPalsy": 12,
+      "StrongPalsy->SlightPalsy": 91,
+      "Normal->SlightPalsy": 38,
+      "SlightPalsy->Normal": 7
+    }
+  }
+}
