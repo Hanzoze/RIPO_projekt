@@ -8,11 +8,8 @@ from mediapipe.tasks.python import vision
 import numpy as np
 from pathlib import Path
 from collections import Counter
-from tqdm import tqdm  # Рекомендую: pip install tqdm
+from tqdm import tqdm
 
-# ============================================================
-# KONFIGURACJA
-# ============================================================
 BASE_DIR = Path(r"C:\Users\danil\PycharmProjects\RIPO")
 MODEL_PATH = str(BASE_DIR / "face_landmarker.task")
 
@@ -27,7 +24,6 @@ OUTPUT_DIR = BASE_DIR / "exploration_results"
 OUTPUT_CSV = OUTPUT_DIR / "features.csv"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Индексы MediaPipe
 LEFT_EYE_LEFT, LEFT_EYE_RIGHT = 33, 133
 RIGHT_EYE_LEFT, RIGHT_EYE_RIGHT = 362, 263
 LEFT_EYE_TOP, LEFT_EYE_BOTTOM = 159, 145
@@ -37,11 +33,6 @@ MOUTH_TOP, MOUTH_BOTTOM = 13, 14
 LEFT_BROW_INNER, LEFT_BROW_OUTER = 107, 46
 RIGHT_BROW_INNER, RIGHT_BROW_OUTER = 336, 276
 NOSE_TIP, NOSE_BASE = 4, 2
-
-
-# ============================================================
-# FUNKCJE POMOCNICZE
-# ============================================================
 
 def distance(p1, p2):
     return np.linalg.norm(p1 - p2)
@@ -105,16 +96,12 @@ def extract_features(landmarks, w, h):
         return None
 
 
-# ============================================================
-# SKANOWANIE I PARSOWANIE
-# ============================================================
 print("Skanowanie i mapowanie plików...")
 all_images = {}
 for img_root in IMAGE_ROOTS:
     if not img_root.exists(): continue
     for f in img_root.rglob("*"):
         if f.suffix.lower() in {".bmp", ".jpg", ".jpeg", ".png"}:
-            # Klucz: "podfolder/nazwa" (np. "1/1")
             rel_key = str(f.relative_to(img_root).with_suffix('')).replace("\\", "/")
             all_images[rel_key] = f
 
@@ -138,9 +125,6 @@ for xml_f in XML_ROOT.rglob("*.xml"):
 
 print(f"Znaleziono unikalnych par do przetworzenia: {len(labeled_samples)}")
 
-# ============================================================
-# PRZETWARZANIE MEDIA PIPE
-# ============================================================
 base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
 options = vision.FaceLandmarkerOptions(base_options=base_options, output_face_blendshapes=False, num_faces=1)
 
@@ -152,7 +136,6 @@ FEATURE_NAMES = ["ipd_px", "left_eye_open", "right_eye_open", "eye_aperture_asym
                  "eye_width_asymmetry"]
 
 with vision.FaceLandmarker.create_from_options(options) as landmarker:
-    # tqdm automatycznie pokaże pasek postępu i czas do końca
     for img_path, label, rel_key in tqdm(labeled_samples, desc="Analiza twarzy"):
         img_bgr = cv2.imread(str(img_path))
         if img_bgr is None: continue
@@ -168,9 +151,6 @@ with vision.FaceLandmarker.create_from_options(options) as landmarker:
                 row.update(features)
                 results_rows.append(row)
 
-# ============================================================
-# ZAPIS
-# ============================================================
 with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=["filename", "label"] + FEATURE_NAMES)
     writer.writeheader()

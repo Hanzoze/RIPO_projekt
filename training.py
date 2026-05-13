@@ -16,11 +16,8 @@ from sklearn.metrics          import (classification_report, confusion_matrix,
 from sklearn.pipeline         import Pipeline
 import joblib
 
-matplotlib.use("Agg")  # bez GUI
+matplotlib.use("Agg")
 
-# ============================================================
-# KONFIGURACJA
-# ============================================================
 BASE_DIR    = Path(r"C:\Users\danil\PycharmProjects\RIPO")
 OUTPUT_DIR  = BASE_DIR / "exploration_results"
 CSV_PATH    = OUTPUT_DIR / "features.csv"
@@ -39,9 +36,7 @@ FEATURE_COLS = [
 
 LABEL_ORDER = ["Normal", "SlightPalsy", "StrongPalsy"]
 
-# ============================================================
-# KROK 1: Wczytanie danych
-# ============================================================
+
 print("=" * 60)
 print("KROK 1: Wczytanie danych")
 print("=" * 60)
@@ -50,11 +45,9 @@ df = pd.read_csv(CSV_PATH)
 print(f"Wczytano wierszy: {len(df)}")
 print(f"Kolumny: {list(df.columns)}")
 
-# Usuń wiersze z brakującymi wartościami
 df = df.dropna(subset=FEATURE_COLS + ["label"])
 print(f"Po usunięciu NaN: {len(df)}")
 
-# Rozkład klas
 label_counts = Counter(df["label"])
 print("\nRozkład klas:")
 for lbl in LABEL_ORDER:
@@ -64,14 +57,11 @@ for lbl in LABEL_ORDER:
 X = df[FEATURE_COLS].values.astype(np.float32)
 y = df["label"].values
 
-# ============================================================
-# KROK 2: Podział danych train/val/test
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 2: Podział danych")
 print("=" * 60)
 
-# Najpierw wydziel test (15%), potem val (15% z pozostałych ~85% → ~17.6% → łącznie ~15%)
 X_temp, X_test, y_temp, y_test = train_test_split(
     X, y, test_size=0.15, random_state=42, stratify=y
 )
@@ -88,14 +78,11 @@ for split_name, y_split in [("Train", y_train), ("Val", y_val), ("Test", y_test)
     c = Counter(y_split)
     print(f"  {split_name}: " + ", ".join(f"{lbl}={c.get(lbl,0)}" for lbl in LABEL_ORDER))
 
-# ============================================================
-# KROK 3: Trening modeli
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 3: Trening modeli")
 print("=" * 60)
 
-# Model 1: Random Forest z class_weight='balanced' (radzi sobie z niezbalansowanymi danymi)
 rf_pipeline = Pipeline([
     ("scaler", StandardScaler()),
     ("clf", RandomForestClassifier(
@@ -107,7 +94,6 @@ rf_pipeline = Pipeline([
     ))
 ])
 
-# Model 2: SVM z class_weight='balanced'
 svm_pipeline = Pipeline([
     ("scaler", StandardScaler()),
     ("clf", SVC(
@@ -139,14 +125,11 @@ for name, model in models.items():
     print(f"    Val Accuracy:  {acc:.4f}")
     print(f"    Val Precision: {p:.4f}  Recall: {r:.4f}  F1: {f1:.4f}")
 
-# Wybór najlepszego modelu na podstawie F1
 best_name = max(val_results, key=lambda n: val_results[n]["f1"])
 best_model = models[best_name]
 print(f"\n  Najlepszy model: {best_name} (F1={val_results[best_name]['f1']:.4f})")
 
-# ============================================================
-# KROK 4: Ewaluacja na zbiorze testowym
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 4: Ewaluacja na zbiorze testowym")
 print("=" * 60)
@@ -158,7 +141,6 @@ print(f"Test Accuracy: {accuracy_score(y_test, y_test_pred):.4f}")
 print("\nClassification Report:")
 print(classification_report(y_test, y_test_pred, labels=LABEL_ORDER, zero_division=0))
 
-# Metryki per klasa
 p_per, r_per, f1_per, sup_per = precision_recall_fscore_support(
     y_test, y_test_pred, labels=LABEL_ORDER, zero_division=0
 )
@@ -171,14 +153,10 @@ for i, lbl in enumerate(LABEL_ORDER):
         "support":   int(sup_per[i]),
     }
 
-# Cross-validation na całym zbiorze (5-fold)
 print("\nCross-validation (5-fold, cały zbiór):")
 cv_scores = cross_val_score(best_model, X, y, cv=5, scoring="f1_macro", n_jobs=-1)
 print(f"  F1 macro: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-# ============================================================
-# KROK 5: Wykresy
-# ============================================================
 print("\n" + "=" * 60)
 print("KROK 5: Generowanie wykresów")
 print("=" * 60)
@@ -186,7 +164,6 @@ print("=" * 60)
 fig, axes = plt.subplots(1, 3, figsize=(20, 6))
 fig.suptitle(f"Ewaluacja modelu: {best_name}", fontsize=14, fontweight="bold")
 
-# -- Wykres 1: Confusion Matrix --
 cm = confusion_matrix(y_test, y_test_pred, labels=LABEL_ORDER)
 ax1 = axes[0]
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
@@ -196,7 +173,6 @@ ax1.set_ylabel("Wartość rzeczywista")
 ax1.set_title("Macierz pomyłek (Confusion Matrix)")
 plt.setp(ax1.get_xticklabels(), rotation=30, ha="right")
 
-# -- Wykres 2: Precision / Recall / F1 per klasa --
 ax2 = axes[1]
 x_pos   = np.arange(len(LABEL_ORDER))
 width   = 0.25
@@ -217,7 +193,6 @@ ax2.set_title("Precision / Recall / F1 per klasa")
 ax2.legend()
 ax2.axhline(y=0.7, color="gray", linestyle="--", alpha=0.5, label="Próg 0.7")
 
-# -- Wykres 3: Porównanie modeli (Val F1) --
 ax3 = axes[2]
 model_names = list(val_results.keys())
 f1_vals     = [val_results[n]["f1"] for n in model_names]
@@ -240,12 +215,10 @@ out_eval = OUTPUT_DIR / "model_evaluation.png"
 plt.savefig(out_eval, dpi=150, bbox_inches="tight")
 print(f"  Wykres ewaluacji zapisany: {out_eval}")
 
-# -- Wykres 4: Ważność cech (Random Forest) --
 if best_name == "Random Forest":
     rf_clf = best_model.named_steps["clf"]
     importances = rf_clf.feature_importances_
 else:
-    # Jeśli SVM wygrał, trenujemy RF tylko do ważności cech
     rf_tmp = Pipeline([
         ("scaler", StandardScaler()),
         ("clf", RandomForestClassifier(n_estimators=100, class_weight="balanced",
@@ -270,14 +243,11 @@ out_imp = OUTPUT_DIR / "feature_importance.png"
 plt.savefig(out_imp, dpi=150, bbox_inches="tight")
 print(f"  Wykres ważności cech zapisany: {out_imp}")
 
-# ============================================================
-# KROK 6: Analiza błędów (False Positives / False Negatives)
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 6: Analiza błędów")
 print("=" * 60)
 
-# Znajdź indeksy błędnych predykcji w zbiorze testowym
 test_indices = df.index[
     df.index.isin(
         df.sample(frac=0.15, random_state=42).index
@@ -295,7 +265,6 @@ print("\nTypy błędów (prawdziwa → predykowana):")
 for (true_lbl, pred_lbl), cnt in sorted(error_counter.items(), key=lambda x: -x[1]):
     print(f"  {true_lbl:15s} → {pred_lbl:15s}: {cnt}")
 
-# False Positives / False Negatives per klasa
 print("\nFalse Positives / False Negatives per klasa:")
 for lbl in LABEL_ORDER:
     tp = sum(1 for t, p in zip(y_test, y_test_pred) if t == lbl and p == lbl)
@@ -303,9 +272,7 @@ for lbl in LABEL_ORDER:
     fn = sum(1 for t, p in zip(y_test, y_test_pred) if t == lbl and p != lbl)
     print(f"  {lbl:15s}: TP={tp}, FP={fp}, FN={fn}")
 
-# ============================================================
-# KROK 7: Zapis wyników do JSON
-# ============================================================
+
 summary = {
     "best_model": best_name,
     "dataset_size": len(df),
@@ -335,7 +302,6 @@ with open(json_path, "w", encoding="utf-8") as f:
     json.dump(summary, f, ensure_ascii=False, indent=2)
 print(f"\nWyniki zapisane: {json_path}")
 
-# Zapis modelu
 model_path = OUTPUT_DIR / "best_model.pkl"
 joblib.dump(best_model, model_path)
 print(f"Model zapisany: {model_path}")

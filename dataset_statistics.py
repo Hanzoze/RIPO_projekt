@@ -4,12 +4,8 @@ import collections
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
-import numpy as np
 import json
 
-# ============================================================
-# KONFIGURACJA ŚCIEŻEK
-# ============================================================
 BASE_DIR = Path(r"C:\Users\danil\PycharmProjects\RIPO")
 
 IMAGE_ROOTS = [
@@ -23,9 +19,6 @@ XML_ROOT = BASE_DIR / "Image_large_XML" / "Image_large_XML"
 OUTPUT_DIR = BASE_DIR / "exploration_results"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# ============================================================
-# KROK 1: Zbieranie zdjęć (z unikalnymi kluczami ścieżek)
-# ============================================================
 print("=" * 60)
 print("KROK 1: Skanowanie zdjęć (Rekurencyjne)")
 print("=" * 60)
@@ -39,7 +32,6 @@ for img_root in IMAGE_ROOTS:
         print(f"  [UWAGA] Folder nie istnieje: {img_root}")
         continue
 
-    # Używamy rglob dla pełnej rekurencji
     for f in img_root.rglob("*"):
         if f.suffix.lower() in IMAGE_EXTENSIONS:
             # Tworzymy klucz: "podfolder/nazwa" (np. "1/1")
@@ -55,9 +47,7 @@ print(f"  Znaleziono unikalnych zdjęć: {len(all_images)}")
 if image_duplicates:
     print(f"  [ALARM] Znaleziono {len(image_duplicates)} konfliktów ścieżek!")
 
-# ============================================================
-# KROK 2: Zbieranie i parsowanie XMLi
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 2: Skanowanie i parsowanie XMLi")
 print("=" * 60)
@@ -110,9 +100,7 @@ print(f"  Poprawnie sparsowanych XMLi: {len(parsed_annotations)}")
 print(f"  Zdjęcia BEZ XMLa: {len(missing_xml_for_image)}")
 print(f"  XMLe BEZ zdjęcia: {len(missing_image_for_xml)}")
 
-# ============================================================
-# KROK 3: Analiza klas
-# ============================================================
+
 class_counter = collections.Counter()
 pose_counter = collections.Counter()
 global_labels = {}
@@ -137,9 +125,7 @@ print(f"\n  Globalna etykieta per zdjęcie:")
 for lbl, cnt in sorted(global_counter.items(), key=lambda x: -x[1]):
     print(f"    {lbl:15s}: {cnt:4d}  ({cnt/len(global_labels)*100:.1f}%)")
 
-# ============================================================
-# KROK 4: Wykresy
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 4: Generowanie wykresów")
 print("=" * 60)
@@ -147,7 +133,6 @@ print("=" * 60)
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 fig.suptitle("Analiza datasetu YFP – Rozkład danych", fontsize=14, fontweight="bold")
 
-# -- Wykres 1: klasy obiektów (bounding box) --
 ax1 = axes[0]
 classes = list(class_counter.keys())
 counts  = list(class_counter.values())
@@ -163,7 +148,6 @@ ax1.set_title("Rozkład klas (bounding box)")
 ax1.bar_label(bars, padding=3)
 ax1.invert_yaxis()
 
-# Legenda
 from matplotlib.patches import Patch
 legend_elements = [
     Patch(facecolor="#e74c3c", label="StrongPalsy"),
@@ -172,7 +156,6 @@ legend_elements = [
 ]
 ax1.legend(handles=legend_elements, loc="lower right")
 
-# -- Wykres 2: globalna etykieta per zdjęcie --
 ax2 = axes[1]
 glbl_labels = list(global_counter.keys())
 glbl_counts = list(global_counter.values())
@@ -193,7 +176,6 @@ wedges, texts, autotexts = ax2.pie(
 )
 ax2.set_title(f"Globalna etykieta per zdjęcie\n(N={len(global_labels)})")
 
-# -- Wykres 3: dostępność danych --
 ax3 = axes[2]
 categories = ["Zdjęcia\nłącznie", "Zdjęcia\nz XML", "Uszkodzone\nXMLe", "Brak\nXML"]
 values = [
@@ -214,9 +196,7 @@ plt.savefig(out_plot, dpi=150, bbox_inches="tight")
 plt.show()
 print(f"  Wykres zapisany: {out_plot}")
 
-# ============================================================
-# KROK 5: Przykłady wizualne (po 2 z każdej klasy globalnej)
-# ============================================================
+
 print("\n" + "=" * 60)
 print("KROK 5: Przykłady wizualne z bounding boxami")
 print("=" * 60)
@@ -242,7 +222,6 @@ for row_idx, target_cls in enumerate(target_classes):
             ax.set_title(f"{target_cls}\n{stem}", fontsize=9)
             ax.axis("off")
 
-            # Rysowanie bounding boxów
             for obj in parsed_annotations.get(stem, []):
                 bbox = obj.get("bbox")
                 if bbox:
@@ -266,7 +245,6 @@ for row_idx, target_cls in enumerate(target_classes):
             ax.axis("off")
             print(f"    [UWAGA] Nie udało się wczytać {stem}: {e}")
 
-    # Jeśli mniej niż 2 próbki
     if len(samples) < 2:
         for col_idx in range(len(samples), 2):
             axes2[row_idx][col_idx].axis("off")
@@ -278,9 +256,7 @@ plt.savefig(out_examples, dpi=150, bbox_inches="tight")
 plt.show()
 print(f"  Przykłady wizualne zapisane: {out_examples}")
 
-# ============================================================
-# KROK 6: Zapis statystyk do JSON (do raportu)
-# ============================================================
+
 stats = {
     "total_images": len(all_images),
     "total_xmls": len(all_xmls),
@@ -310,7 +286,6 @@ if image_duplicates:
         for key, p1, p2 in image_duplicates:
             f.write(f"Klucz: {key}\n  Plik 1: {p1}\n  Plik 2: {p2}\n\n")
 
-# Statystyki końcowe
 stats = {
     "total_images": len(all_images),
     "usable_pairs": len(global_labels),

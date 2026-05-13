@@ -8,23 +8,18 @@ already_ok = 0
 
 print("Wykonuję wymuszoną naprawę (Force Fix)...")
 
-# Pobieramy listę plików
 xml_files = list(XML_ROOT.rglob("*.xml"))
 
 for f in tqdm(xml_files, desc="Naprawianie"):
     try:
-        # Czytamy surowy tekst
         text = f.read_text(encoding="utf-8", errors="replace")
 
         if "</annoatation>" in text:
-            # Usuwamy błędny tag
             new_text = text.replace("</annoatation>", "")
 
-            # Usuwamy ewentualne puste linie, które mogły zostać
             lines = [line for line in new_text.splitlines() if line.strip()]
             final_text = "\n".join(lines)
 
-            # Zapisujemy bez sprawdzania przez ElementTree
             f.write_text(final_text, encoding="utf-8")
             fixed_count += 1
         else:
